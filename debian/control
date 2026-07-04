@@ -1,7 +1,7 @@
 Source: wasistlos
 Section: web
 Priority: optional
-Maintainer: Enes Hecan <nshecan@gmail.com>
+Maintainer: Anupam Srivastava <anupamsr1983@gmail.com>
 Build-Depends: cmake (>= 3.16),
                debhelper-compat (= 13),
                intltool,
@@ -19,6 +19,6 @@ Depends: glib-networking,
          gstreamer1.0-plugins-bad,
          gstreamer1.0-plugins-base,
          gstreamer1.0-plugins-good,
-         libgtkmm-4.0-1t64,
+         libgtkmm-4.0-0,
          libwebkitgtk-6.0-4
 Description: An unofficial WhatsApp desktop application for linux

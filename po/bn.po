@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: WasIstLos\n"
-"Report-Msgid-Bugs-To: https://github.com/xeco23/WasIstLos/issues\n"
+"Report-Msgid-Bugs-To: https://github.com/anupamsr/WasIstLos/issues\n"
 "POT-Creation-Date: 2024-10-22 14:04+0200\n"
 "Language: bn\n"
 "MIME-Version: 1.0\n"

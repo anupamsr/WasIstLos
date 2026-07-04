@@ -1,10 +1,10 @@
 name: wasistlos
-base: core20
+base: core24
 grade: stable
 confinement: strict
 adopt-info: wasistlos
 license: GPL-3.0
-website: https://github.com/xeco23/WasIstLos
+website: https://github.com/anupamsr/WasIstLos
 icon: resource/image/icons/hicolor/256x256/apps/com.github.xeco23.WasIstLos.png
 
 architectures:
@@ -27,13 +27,12 @@ parts:
       - -DCMAKE_BUILD_TYPE=Release
     build-packages:
       - intltool
-      - libcanberra-dev
-      - libsigc++-2.0-dev
-      - libgtkmm-3.0-dev
-      - libwebkit2gtk-4.0-dev
+      - libsigc++-3.0-dev
+      - libgtkmm-4.0-dev
+      - libwebkitgtk-6.0-dev
       - libayatana-appindicator3-dev
     stage-packages:
-      - libwebkit2gtk-4.0-37
+      - libwebkitgtk-6.0-4
       - libayatana-appindicator3-1
       - glib-networking
       - libglu1-mesa
@@ -48,10 +47,10 @@ parts:
   cleanup:
     after: [wasistlos]
     plugin: nil
-    build-snaps: [core20, gnome-3-38-2004, gtk-common-themes]
+    build-snaps: [core24, gnome-46-2404, gtk-common-themes]
     override-prime: |
       set -eux
-      for snap in "core20" "gnome-3-38-2004" "gtk-common-themes"; do
+      for snap in "core24" "gnome-46-2404" "gtk-common-themes"; do
         cd "/snap/$snap/current" && find . -type f,l -exec rm -f "$SNAPCRAFT_PRIME/{}" "$SNAPCRAFT_PRIME/usr/{}" \;
       done
       for CRUFT in bug lintian man; do
@@ -60,14 +59,14 @@ parts:
       find $SNAPCRAFT_PRIME/usr/share/doc/ -type f -not -name 'copyright' -delete
       find $SNAPCRAFT_PRIME/usr/share -type d -empty -delete
 
-  gnome-3-38-extension:
+  gnome-46-extension:
     build-packages:
       - gcc
     build-snaps:
-      - gnome-3-38-2004-sdk/latest/stable
+      - gnome-46-2404-sdk/latest/stable
     make-parameters:
-      - WITH_PYTHON=3.8
-      - PLATFORM_PLUG=gnome-3-38-2004
+      - WITH_PYTHON=3.12
+      - PLATFORM_PLUG=gnome-46-2404
     plugin: make
     source: $SNAPCRAFT_EXTENSIONS_DIR/desktop
     source-subdir: gnome
@@ -115,8 +114,8 @@ assumes:
 plugs:
   desktop:
     mount-host-font-cache: false
-  gnome-3-38-2004:
-    default-provider: gnome-3-38-2004
+  gnome-46-2404:
+    default-provider: gnome-46-2404
     interface: content
     target: $SNAP/gnome-platform
   gtk-3-themes:
@@ -144,8 +143,8 @@ hooks:
       - desktop
 
 layout:
-  /usr/lib/$SNAPCRAFT_ARCH_TRIPLET/webkit2gtk-4.0:
-    bind: $SNAP/gnome-platform/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/webkit2gtk-4.0
+  /usr/lib/$SNAPCRAFT_ARCH_TRIPLET/webkitgtk-6.0:
+    bind: $SNAP/gnome-platform/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/webkitgtk-6.0
   /usr/share/libdrm:
     bind: $SNAP/gnome-platform/usr/share/libdrm
   /usr/share/xml/iso-codes:

@@ -1,9 +1,9 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.16)
 project(
         wasistlos
-        VERSION 1.7.0
+        VERSION 1.8.0
         DESCRIPTION "An unofficial WhatsApp desktop application for Linux"
-        HOMEPAGE_URL "https://github.com/xeco23/WasIstLos"
+        HOMEPAGE_URL "https://github.com/anupamsr/WasIstLos"
         LANGUAGES C CXX
     )
 

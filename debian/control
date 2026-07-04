@@ -2,16 +2,14 @@ Source: wasistlos
 Section: web
 Priority: optional
 Maintainer: Enes Hecan <nshecan@gmail.com>
-Build-Depends: cmake,
-               debhelper (>=10),
+Build-Depends: cmake (>= 3.16),
+               debhelper-compat (= 13),
                intltool,
-               libayatana-appindicator3-dev,
-               libgtkmm-3.0-dev,
-               libwebkit2gtk-4.1-dev,
-               libcanberra-dev,
+               libgtkmm-4.0-dev,
+               libwebkitgtk-6.0-dev,
                pkgconf
 Standards-Version: 4.5.1
-Homepage: https://github.com/xeco23/WasIstLos
+Homepage: https://github.com/anupamsr/WasIstLos
 Rules-Requires-Root: no
 
 Package: wasistlos
@@ -21,8 +19,6 @@ Depends: glib-networking,
          gstreamer1.0-plugins-bad,
          gstreamer1.0-plugins-base,
          gstreamer1.0-plugins-good,
-         libayatana-appindicator3-1,
-         libgtkmm-3.0-1v5,
-         libwebkit2gtk-4.1-0,
-         libcanberra0
+         libgtkmm-4.0-1t64,
+         libwebkitgtk-6.0-4
 Description: An unofficial WhatsApp desktop application for linux

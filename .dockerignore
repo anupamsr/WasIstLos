@@ -1,0 +1,11 @@
+build/
+.git/
+.github/
+*.md
+screenshot/
+.gitignore
+.clang-format
+.clang-tidy
+debian/
+snap/
+appimage/

@@ -20,7 +20,7 @@ int main(int argc, char** argv)
     bind_textdomain_codeset(GETTEXT_PACKAGE, "UTF-8");
     textdomain(GETTEXT_PACKAGE);
 
-    auto app = wil::ui::Application{argc, argv};
+    auto app = wil::ui::Application{};
 
     wil::util::redirectOutputToLogger();
 
@@ -28,5 +28,5 @@ int main(int argc, char** argv)
     signal(SIGTERM, sigterm);
     signal(SIGPIPE, SIG_IGN);
 
-    return app.run();
+    return app.run(argc, argv);
 }

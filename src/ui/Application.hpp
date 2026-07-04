@@ -11,7 +11,7 @@ namespace wil::ui
             static Application& getInstance();
 
         public:
-            Application(int argc, char** argv);
+            Application();
 
         public:
             void keepAlive();

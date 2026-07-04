@@ -2,9 +2,10 @@
 #include <glibmm/i18n.h>
 #include <gtkmm/grid.h>
 #include <gtkmm/button.h>
-#include <gtkmm/modelbutton.h>
 #include <gtkmm/aboutdialog.h>
 #include <gtkmm/shortcutswindow.h>
+#include <gtkmm/eventcontrollerkey.h>
+#include <gtkmm/eventcontrollerscroll.h>
 #include "Application.hpp"
 #include "Config.hpp"
 #include "../util/Settings.hpp"
@@ -15,76 +16,67 @@ namespace wil::ui
         : Gtk::ApplicationWindow{cobject}
         , m_trayIcon{}
         , m_webView{}
-        , m_sound{}
         , m_pendingUrl{}
         , m_preferencesWindow{nullptr}
-        , m_phoneNumberDialog{nullptr}
         , m_headerBar{nullptr}
         , m_shortcutsWindow{nullptr}
+        , m_aboutDialog{nullptr}
         , m_buttonZoomLevel{nullptr}
-        , m_fullscreen{false}
     {
-        auto const appIcon16x16   = Gdk::Pixbuf::create_from_resource("/main/image/icons/hicolor/16x16/apps/" WIL_ICON ".png");
-        auto const appIcon32x32   = Gdk::Pixbuf::create_from_resource("/main/image/icons/hicolor/32x32/apps/" WIL_ICON ".png");
-        auto const appIcon64x64   = Gdk::Pixbuf::create_from_resource("/main/image/icons/hicolor/64x64/apps/" WIL_ICON ".png");
-        auto const appIcon128x128 = Gdk::Pixbuf::create_from_resource("/main/image/icons/hicolor/128x128/apps/" WIL_ICON ".png");
-        set_icon_list({appIcon16x16, appIcon32x32, appIcon64x64, appIcon128x128});
-        set_default_icon(appIcon64x64);
+        set_icon_name(WIL_ICON);
 
-        Gtk::Grid* gridMain = nullptr;
-        refBuilder->get_widget("grid_main", gridMain);
-        gridMain->attach(m_webView, 0, 1, 1, 1);
+        auto gridMain = refBuilder->get_widget<Gtk::Grid>("grid_main");
+        gridMain->attach(m_webView, 0, 0);
 
-        Gtk::Button* buttonOpenPhoneNumber = nullptr;
-        refBuilder->get_widget("button_open_phone_number", buttonOpenPhoneNumber);
-        buttonOpenPhoneNumber->signal_clicked().connect(sigc::mem_fun(*this, &MainWindow::onOpenPhoneNumber));
 
-        Gtk::Button* buttonRefresh = nullptr;
-        refBuilder->get_widget("button_refresh", buttonRefresh);
+        auto buttonRefresh = refBuilder->get_widget<Gtk::Button>("button_refresh");
         buttonRefresh->signal_clicked().connect(sigc::mem_fun(*this, &MainWindow::onRefresh));
 
-        refBuilder->get_widget("headerbar", m_headerBar);
+        m_headerBar = refBuilder->get_widget<Gtk::HeaderBar>("headerbar");
 
-        Gtk::ModelButton* buttonFullscreen = nullptr;
-        refBuilder->get_widget("button_fullscreen", buttonFullscreen);
+        auto buttonFullscreen = refBuilder->get_widget<Gtk::Button>("button_fullscreen");
         buttonFullscreen->signal_clicked().connect(sigc::mem_fun(*this, &MainWindow::onFullscreen));
 
-        refBuilder->get_widget("button_zoom_level", m_buttonZoomLevel);
+        m_buttonZoomLevel = refBuilder->get_widget<Gtk::Button>("button_zoom_level");
         m_buttonZoomLevel->set_label(m_webView.getZoomLevelString());
         m_buttonZoomLevel->signal_clicked().connect(sigc::mem_fun(*this, &MainWindow::onResetZoom));
 
-        Gtk::Button* buttonZoomIn = nullptr;
-        refBuilder->get_widget("button_zoom_in", buttonZoomIn);
+        auto buttonZoomIn = refBuilder->get_widget<Gtk::Button>("button_zoom_in");
         buttonZoomIn->signal_clicked().connect(sigc::mem_fun(*this, &MainWindow::onZoomIn));
 
-        Gtk::Button* buttonZoomOut = nullptr;
-        refBuilder->get_widget("button_zoom_out", buttonZoomOut);
+        auto buttonZoomOut = refBuilder->get_widget<Gtk::Button>("button_zoom_out");
         buttonZoomOut->signal_clicked().connect(sigc::mem_fun(*this, &MainWindow::onZoomOut));
 
-        Gtk::ModelButton* buttonPreferences = nullptr;
-        refBuilder->get_widget("button_preferences", buttonPreferences);
+        auto buttonPreferences = refBuilder->get_widget<Gtk::Button>("button_preferences");
         buttonPreferences->signal_clicked().connect(sigc::mem_fun(*this, &MainWindow::onOpenPreferences));
 
-        Gtk::ModelButton* buttonShortcuts = nullptr;
-        refBuilder->get_widget("button_shortcuts", buttonShortcuts);
+        auto buttonShortcuts = refBuilder->get_widget<Gtk::Button>("button_shortcuts");
         buttonShortcuts->signal_clicked().connect(sigc::mem_fun(*this, &MainWindow::onShortcuts));
 
-        Gtk::ModelButton* buttonAbout = nullptr;
-        refBuilder->get_widget("button_about", buttonAbout);
+        auto buttonAbout = refBuilder->get_widget<Gtk::Button>("button_about");
         buttonAbout->signal_clicked().connect(sigc::mem_fun(*this, &MainWindow::onAbout));
 
-        Gtk::ModelButton* buttonQuit = nullptr;
-        refBuilder->get_widget("button_quit", buttonQuit);
+        auto buttonQuit = refBuilder->get_widget<Gtk::Button>("button_quit");
         buttonQuit->signal_clicked().connect(sigc::mem_fun(*this, &MainWindow::onQuit));
 
         m_webView.signalLoadStatus().connect(sigc::mem_fun(*this, &MainWindow::onLoadStatusChanged));
         m_webView.signalNotification().connect(sigc::mem_fun(*this, &MainWindow::onNotificationChanged));
         m_webView.signalNotificationClicked().connect(sigc::mem_fun(*this, &MainWindow::onShow));
+        m_webView.signalConnectivity().connect(sigc::mem_fun(*this, &MainWindow::onConnectivityChanged));
         m_trayIcon.signalShow().connect(sigc::mem_fun(*this, &MainWindow::onShow));
         m_trayIcon.signalAbout().connect(sigc::mem_fun(*this, &MainWindow::onAbout));
         m_trayIcon.signalQuit().connect(sigc::mem_fun(*this, &MainWindow::onQuit));
 
-        show_all();
+        auto keyController = Gtk::EventControllerKey::create();
+        keyController->signal_key_pressed().connect(sigc::mem_fun(*this, &MainWindow::onKeyPressed), false);
+        add_controller(keyController);
+
+        auto scrollController = Gtk::EventControllerScroll::create();
+        scrollController->set_flags(Gtk::EventControllerScroll::Flags::VERTICAL);
+        scrollController->signal_scroll().connect(sigc::mem_fun(*this, &MainWindow::onScroll), false);
+        add_controller(scrollController);
+
+        signal_close_request().connect(sigc::mem_fun(*this, &MainWindow::onCloseRequest), false);
 
         m_trayIcon.setVisible(util::Settings::getInstance().getValue<bool>("general", "close-to-tray"));
         m_headerBar->set_visible(util::Settings::getInstance().getValue<bool>("general", "header-bar", true));
@@ -102,11 +94,11 @@ namespace wil::ui
         }
     }
 
-    bool MainWindow::on_key_press_event(GdkEventKey* keyEvent)
+    bool MainWindow::onKeyPressed(guint keyval, guint keycode, Gdk::ModifierType state)
     {
-        if (keyEvent->state & GDK_CONTROL_MASK)
+        if ((state & Gdk::ModifierType::CONTROL_MASK) != Gdk::ModifierType(0))
         {
-            switch (keyEvent->keyval)
+            switch (keyval)
             {
                 case GDK_KEY_P:
                 case GDK_KEY_p:
@@ -134,9 +126,9 @@ namespace wil::ui
                     break;
             }
         }
-        else if (keyEvent->state & GDK_MOD1_MASK)
+        else if ((state & Gdk::ModifierType::ALT_MASK) != Gdk::ModifierType(0))
         {
-            switch (keyEvent->keyval)
+            switch (keyval)
             {
                 case GDK_KEY_H:
                 case GDK_KEY_h:
@@ -153,7 +145,7 @@ namespace wil::ui
         }
         else
         {
-            switch (keyEvent->keyval)
+            switch (keyval)
             {
                 case GDK_KEY_F11:
                     onFullscreen();
@@ -164,60 +156,38 @@ namespace wil::ui
             }
         }
 
-        // This is required for keyboard shortcuts on WhatsApp Web to work. Since it is running
-        // on WebKit, WhatsApp Web listens for Mac's [CMD] key instead of the standard [ALT] key.
-        if (keyEvent->state & GDK_MOD1_MASK)
+        return false;
+    }
+
+    bool MainWindow::onScroll(double dx, double dy)
+    {
+        if (dy < 0)
         {
-            keyEvent->state |= GDK_META_MASK;
+            onZoomIn();
+            return true;
+        }
+        else if (dy > 0)
+        {
+            onZoomOut();
+            return true;
         }
 
-        return Gtk::ApplicationWindow::on_key_press_event(keyEvent);
+        return false;
     }
 
-    bool MainWindow::on_scroll_event(GdkEventScroll* scrollEvent)
-    {
-        if (scrollEvent->state & GDK_CONTROL_MASK)
-        {
-            switch (scrollEvent->direction)
-            {
-                case GDK_SCROLL_UP:
-                case GDK_SCROLL_RIGHT:
-                    onZoomIn();
-                    return true;
-
-                case GDK_SCROLL_DOWN:
-                case GDK_SCROLL_LEFT:
-                    onZoomOut();
-                    return true;
-
-                default:
-                    break;
-            }
-        }
-
-        return Gtk::ApplicationWindow::on_scroll_event(scrollEvent);
-    }
-
-    bool MainWindow::on_window_state_event(GdkEventWindowState* windowStateEvent)
-    {
-        m_fullscreen = (windowStateEvent->new_window_state & GDK_WINDOW_STATE_FULLSCREEN);
-
-        return Gtk::ApplicationWindow::on_window_state_event(windowStateEvent);
-    }
-
-    bool MainWindow::on_delete_event(GdkEventAny*)
+    bool MainWindow::onCloseRequest()
     {
         if (m_trayIcon.isVisible())
         {
             Application::getInstance().keepAlive();
-            hide();
+            set_visible(false);
+            return true;
         }
         else
         {
             Application::getInstance().endKeepAlive();
+            return false;
         }
-
-        return false;
     }
 
     void MainWindow::onRefresh()
@@ -239,35 +209,13 @@ namespace wil::ui
         if (!m_preferencesWindow)
         {
             auto const refBuilder = Gtk::Builder::create_from_resource("/main/ui/PreferencesWindow.ui");
-            refBuilder->get_widget_derived("window_preferences", m_preferencesWindow, m_trayIcon, m_webView);
+            m_preferencesWindow = Gtk::Builder::get_widget_derived<PreferencesWindow>(refBuilder, "window_preferences", m_trayIcon, m_webView);
         }
 
         m_preferencesWindow->set_transient_for(*this);
-        m_preferencesWindow->show_all();
+        m_preferencesWindow->set_visible(true);
     }
 
-    void MainWindow::onOpenPhoneNumber()
-    {
-        if (!m_phoneNumberDialog)
-        {
-            auto const refBuilder = Gtk::Builder::create_from_resource("/main/ui/PhoneNumberDialog.ui");
-            refBuilder->get_widget_derived("phone_number_dialog", m_phoneNumberDialog);
-
-            m_phoneNumberDialog->signal_response().connect(sigc::mem_fun(*this, &MainWindow::onPhoneNumberDialogResponse));
-        }
-
-        m_phoneNumberDialog->set_transient_for(*this);
-        m_phoneNumberDialog->show_all();
-    }
-
-    void MainWindow::onPhoneNumberDialogResponse(int responseId)
-    {
-        if (responseId == Gtk::ResponseType::RESPONSE_OK)
-        {
-            auto const phoneNumber = m_phoneNumberDialog->getPhoneNumber();
-            m_webView.openPhoneNumber(phoneNumber);
-        }
-    }
 
     void MainWindow::onNotificationChanged(bool show)
     {
@@ -275,10 +223,13 @@ namespace wil::ui
         {
             m_trayIcon.setAttention(show);
         }
+    }
 
-        if (show && util::Settings::getInstance().getValue<bool>("general", "notification-sounds", true))
+    void MainWindow::onConnectivityChanged(bool connected)
+    {
+        if (!is_visible())
         {
-            m_sound.play("message-new-instant");
+            m_trayIcon.setWarning(!connected);
         }
     }
 
@@ -287,8 +238,10 @@ namespace wil::ui
         if (!is_visible())
         {
             m_trayIcon.setAttention(false);
+            m_trayIcon.setWarning(false);
         }
 
+        set_visible(true);
         present();
     }
 
@@ -303,7 +256,7 @@ namespace wil::ui
 
     void MainWindow::onFullscreen()
     {
-        m_fullscreen ? unfullscreen() : fullscreen();
+        is_fullscreen() ? unfullscreen() : fullscreen();
     }
 
     void MainWindow::onZoomIn()
@@ -329,26 +282,32 @@ namespace wil::ui
         if (!m_shortcutsWindow)
         {
             auto const refBuilder = Gtk::Builder::create_from_resource("/main/ui/ShortcutsWindow.ui");
-            refBuilder->get_widget("shortcuts_window", m_shortcutsWindow);
+            m_shortcutsWindow = refBuilder->get_widget<Gtk::ShortcutsWindow>("shortcuts_window");
         }
 
         m_shortcutsWindow->set_transient_for(*this);
-        m_shortcutsWindow->show_all();
+        m_shortcutsWindow->set_visible(true);
     }
 
     void MainWindow::onAbout()
     {
-        auto aboutDialog = Gtk::AboutDialog{};
+        if (!m_aboutDialog)
+        {
+            m_aboutDialog = new Gtk::AboutDialog{};
+            m_aboutDialog->set_version(WIL_VERSION);
+            m_aboutDialog->set_program_name(_("WasIstLos"));
+            m_aboutDialog->set_comments(_("An unofficial WhatsApp desktop application for Linux"));
+            m_aboutDialog->set_website(WIL_HOMEPAGE);
+            m_aboutDialog->set_website_label(_("GitHub Repository"));
+            m_aboutDialog->set_license_type(Gtk::License::GPL_3_0);
+            m_aboutDialog->set_hide_on_close(true);
+        }
 
-        aboutDialog.set_title(_("About"));
-        aboutDialog.set_version(WIL_VERSION);
-        aboutDialog.set_program_name(_("WasIstLos"));
-        aboutDialog.set_comments(_("An unofficial WhatsApp desktop application for Linux"));
-        aboutDialog.set_website(WIL_HOMEPAGE);
-        aboutDialog.set_website_label(_("GitHub Repository"));
-        aboutDialog.set_license_type(Gtk::LICENSE_GPL_3_0);
+        if (is_visible())
+        {
+            m_aboutDialog->set_transient_for(*this);
+        }
 
-        aboutDialog.set_transient_for(*this);
-        aboutDialog.run();
+        m_aboutDialog->set_visible(true);
     }
 }

@@ -1,6 +1,6 @@
 #include "Application.hpp"
 #include <gtkmm/window.h>
-#include <gtkmm/settings.h>
+#include <gtk/gtk.h>
 #include "Config.hpp"
 #include "../util/Settings.hpp"
 
@@ -13,8 +13,8 @@ namespace wil::ui
         return *m_instance;
     }
 
-    Application::Application(int argc, char** argv)
-        : Gtk::Application{argc, argv, WIL_APP_ID, Gio::APPLICATION_HANDLES_OPEN}
+    Application::Application()
+        : Gtk::Application{WIL_APP_ID, Gio::Application::Flags::HANDLES_OPEN}
         , m_onHold{false}
         , m_mainWindow{nullptr}
     {
@@ -50,11 +50,15 @@ namespace wil::ui
     {
         Gtk::Application::on_startup();
 
+        if (auto* display = gdk_display_get_default())
+        {
+            auto* iconTheme = gtk_icon_theme_get_for_display(display);
+            gtk_icon_theme_add_resource_path(iconTheme, "/main/image/icons/hicolor");
+        }
+
         auto const refBuilder = Gtk::Builder::create_from_resource("/main/ui/MainWindow.ui");
 
-        wil::ui::MainWindow* window = nullptr;
-        refBuilder->get_widget_derived("window_main", window);
-        m_mainWindow.reset(window);
+        m_mainWindow.reset(Gtk::Builder::get_widget_derived<wil::ui::MainWindow>(refBuilder, "window_main"));
 
         add_window(*m_mainWindow);
     }
@@ -78,12 +82,15 @@ namespace wil::ui
         }
         else if (wil::util::Settings::getInstance().getValue<bool>("general", "start-minimized"))
         {
-            m_mainWindow->is_visible() ? m_mainWindow->iconify() : m_mainWindow->deiconify();
+            m_mainWindow->is_visible() ? m_mainWindow->minimize() : m_mainWindow->present();
+        }
+        else
+        {
+            m_mainWindow->present();
         }
 
-        auto const settings   = Gtk::Settings::get_default();
         auto const preferDark = util::Settings::getInstance().getValue<bool>("appearance", "prefer-dark-theme");
-        settings->property_gtk_application_prefer_dark_theme().set_value(preferDark);
+        g_object_set(gtk_settings_get_default(), "gtk-application-prefer-dark-theme", preferDark, nullptr);
     }
 
     void Application::on_open(Application::type_vec_files const& files, Glib::ustring const&)

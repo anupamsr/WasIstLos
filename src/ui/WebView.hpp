@@ -1,7 +1,8 @@
 #pragma once
 
-#include <gtkmm/widget.h>
-#include <webkit2/webkit2.h>
+#include <gtkmm.h>
+#include <sigc++/functors/slot.h>
+#include <webkit/webkit.h>
 
 namespace wil::ui
 {
@@ -23,7 +24,6 @@ namespace wil::ui
             WebKitLoadEvent getLoadStatus() const noexcept;
             void            setHwAccelPolicy(WebKitHardwareAccelerationPolicy policy);
             void            sendRequest(std::string url);
-            void            openPhoneNumber(std::string const& phoneNumber);
             void            zoomIn();
             void            zoomOut();
             void            resetZoom();
@@ -31,9 +31,10 @@ namespace wil::ui
             std::string     getZoomLevelString();
             void            setMinFontSize(unsigned int fontSize);
 
-            sigc::signal<void, WebKitLoadEvent>& signalLoadStatus() noexcept;
-            sigc::signal<void, bool>&            signalNotification() noexcept;
-            sigc::signal<void>&                  signalNotificationClicked() noexcept;
+            sigc::signal<void(WebKitLoadEvent)>& signalLoadStatus() noexcept;
+            sigc::signal<void(bool)>&            signalNotification() noexcept;
+            sigc::signal<void()>&                signalNotificationClicked() noexcept;
+            sigc::signal<void(bool)>&            signalConnectivity() noexcept;
 
         private:
             void onLoadStatusChanged(WebKitLoadEvent loadEvent);
@@ -43,10 +44,11 @@ namespace wil::ui
             friend void detail::loadChanged(WebKitWebView*, WebKitLoadEvent, gpointer);
 
         private:
-            WebKitLoadEvent                     m_loadStatus;
-            bool                                m_stoppedResponding;
-            sigc::signal<void, WebKitLoadEvent> m_signalLoadStatus;
-            sigc::signal<void, bool>            m_signalNotification;
-            sigc::signal<void>                  m_signalNotificationClicked;
+            WebKitLoadEvent                        m_loadStatus;
+            bool                                   m_stoppedResponding;
+            sigc::signal<void(WebKitLoadEvent)>    m_signalLoadStatus;
+            sigc::signal<void(bool)>               m_signalNotification;
+            sigc::signal<void()>                   m_signalNotificationClicked;
+            sigc::signal<void(bool)>               m_signalConnectivity;
     };
 }

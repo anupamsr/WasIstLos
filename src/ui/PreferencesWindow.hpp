@@ -20,7 +20,6 @@ namespace wil::ui
             bool onStartInTrayChanged(bool state) const;
             bool onStartMinimizedChanged(bool state) const;
             bool onAutostartChanged(bool state) const;
-            bool onNotificationSoundsChanged(bool state) const;
             bool onPreferDarkThemeChanged(bool state) const;
             bool onAllowPermissionsChanged(bool state) const;
             void onHwAccelChanged() const;
@@ -31,7 +30,6 @@ namespace wil::ui
             WebView*           m_webView;
             Gtk::Switch*       m_switchStartInTray;
             Gtk::Switch*       m_switchStartMinimized;
-            Gtk::Switch*       m_switchNotificationSounds;
             Gtk::ComboBoxText* m_comboboxHwAccel;
     };
 }

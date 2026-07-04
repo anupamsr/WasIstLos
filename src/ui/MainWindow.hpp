@@ -4,12 +4,10 @@
 #include <gtkmm/builder.h>
 #include <gtkmm/headerbar.h>
 #include <gtkmm/label.h>
-#include <gtkmm/modelbutton.h>
+#include <gtkmm/aboutdialog.h>
 #include "PreferencesWindow.hpp"
-#include "PhoneNumberDialog.hpp"
 #include "TrayIcon.hpp"
 #include "WebView.hpp"
-#include "../util/Sound.hpp"
 
 namespace wil::ui
 {
@@ -22,18 +20,16 @@ namespace wil::ui
             void openUrl(std::string const& url);
 
         protected:
-            bool on_key_press_event(GdkEventKey* keyEvent) override;
-            bool on_scroll_event(GdkEventScroll* scrollEvent) override;
-            bool on_window_state_event(GdkEventWindowState* windowStateEvent) override;
-            bool on_delete_event(GdkEventAny*) override;
+            bool onKeyPressed(guint keyval, guint keycode, Gdk::ModifierType state);
+            bool onScroll(double dx, double dy);
+            bool onCloseRequest();
 
         private:
             void onRefresh();
             void onLoadStatusChanged(WebKitLoadEvent loadEvent);
             void onOpenPreferences();
-            void onOpenPhoneNumber();
-            void onPhoneNumberDialogResponse(int responseId);
             void onNotificationChanged(bool show);
+            void onConnectivityChanged(bool connected);
             void onShow();
             void onQuit();
             void onFullscreen();
@@ -46,13 +42,11 @@ namespace wil::ui
         private:
             TrayIcon              m_trayIcon;
             WebView               m_webView;
-            util::Sound           m_sound;
             Glib::ustring         m_pendingUrl;
             PreferencesWindow*    m_preferencesWindow;
-            PhoneNumberDialog*    m_phoneNumberDialog;
             Gtk::HeaderBar*       m_headerBar;
             Gtk::ShortcutsWindow* m_shortcutsWindow;
+            Gtk::AboutDialog*     m_aboutDialog;
             Gtk::Button*          m_buttonZoomLevel;
-            bool                  m_fullscreen;
     };
 }
